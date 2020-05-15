@@ -1,0 +1,77 @@
+# echo 'root' | docker secret create DB_ROOT_PASSWORD -
+# echo 'xtra' | docker secret create XTRABACKUP_PASSWORD -
+# docker stack deploy -c swarm.stack.yml db
+version: '3.8'
+
+services:
+
+    adminer:
+        image: adminer
+        deploy:
+            replicas: 1
+        ports:
+            - "8080:8080"
+        networks:
+            - dbcluster
+        environment:
+            - ADMINER_DEFAULT_SERVER=dbcluster
+            - ADMINER_PLUGINS=tables-filter dump-bz2 dump-date
+
+    seed:
+        image: pitilezard/mariadb-galera-swarm:10.3
+        secrets:
+            - DB_ROOT_PASSWORD
+            - XTRABACKUP_PASSWORD
+        deploy:
+            mode: replicated
+            replicas: 1
+            placement:
+                constraints:
+                  - "node.role==manager"
+        networks:
+            - dbcluster
+        command: seed
+        volumes:
+            - mysql-data:/var/lib/mysql
+        environment:
+            - XTRABACKUP_PASSWORD_FILE=/run/secrets/XTRABACKUP_PASSWORD
+            - MYSQL_ROOT_PASSWORD_FILE=/run/secrets/DB_ROOT_PASSWORD
+            - NODE_ADDRESS=^10.0.*.*
+            - MYSQL_ROOT_HOST=%
+
+    node:
+        image: pitilezard/mariadb-galera-swarm:10.3
+        secrets:
+            - XTRABACKUP_PASSWORD
+        deploy:
+            mode: replicated
+            replicas: 0
+            placement:
+                max_replicas_per_node: 1
+                constraints:
+                  - "node.role==manager"
+        networks:
+            - dbcluster
+        command: node tasks.seed,tasks.node
+        volumes:
+            - mysql-data:/var/lib/mysql
+        environment:
+            - XTRABACKUP_PASSWORD_FILE=/run/secrets/XTRABACKUP_PASSWORD
+            - NODE_ADDRESS=^10.0.*.*
+            - HEALTHY_WHILE_BOOTING=1
+            - MYSQL_ROOT_HOST=%
+
+volumes:
+    mysql-data:
+        name: '{{.Service.Name}}-{{.Task.Slot}}-data'
+        driver: local
+
+networks:
+    dbcluster:
+        driver: overlay
+
+secrets:
+    DB_ROOT_PASSWORD:
+        external: true
+    XTRABACKUP_PASSWORD:
+        external: true
