@@ -1,0 +1,7 @@
+version: '3.8'
+
+services:
+    mariadb-galera-swarm:
+        build:
+            context: .
+        image: pitilezard/mariadb-galera-swarm:10.3

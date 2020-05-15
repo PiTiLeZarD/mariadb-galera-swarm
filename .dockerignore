@@ -4,3 +4,4 @@ examples
 makefile
 Dockerfile-*
 test.sh
+docker-compose.yml
