@@ -16,6 +16,7 @@ RUN set -x \
     && apt-get clean all \
     && rm -rf /tmp/* /var/cache/apk/* /var/lib/apt/lists/*
 
+
 COPY conf.d/*                /etc/mysql/conf.d/
 COPY *.sh                    /usr/local/bin/
 COPY bin/galera-healthcheck  /usr/local/bin/galera-healthcheck
@@ -23,6 +24,9 @@ COPY primary-component.sql   /
 
 RUN set -ex ;\
     # Fix permissions
+    sed -i s/999/1000/g /etc/passwd ;\
+    sed -i s/999/1000/g /etc/group ;\
+    find / -group 999 -user 999 2>/dev/null | xargs chown -R 1000:1000; \
     chown -R mysql:mysql /etc/mysql ;\
     chmod -R go-w /etc/mysql ;\
     # Disable code that deletes progress file after SST

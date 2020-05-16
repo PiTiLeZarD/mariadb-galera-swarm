@@ -1,5 +1,8 @@
 # echo 'root' | docker secret create DB_ROOT_PASSWORD -
 # echo 'xtra' | docker secret create XTRABACKUP_PASSWORD -
+#
+# docker network create -d overlay --attachable intra
+#
 # docker stack deploy -c swarm.stack.yml db
 version: '3.8'
 
@@ -36,7 +39,6 @@ services:
         environment:
             - XTRABACKUP_PASSWORD_FILE=/run/secrets/XTRABACKUP_PASSWORD
             - MYSQL_ROOT_PASSWORD_FILE=/run/secrets/DB_ROOT_PASSWORD
-            - NODE_ADDRESS=^10.0.*.*
             - MYSQL_ROOT_HOST=%
 
     node:
@@ -52,12 +54,12 @@ services:
                   - "node.role==manager"
         networks:
             - dbcluster
+            - intra
         command: node tasks.seed,tasks.node
         volumes:
             - mysql-data:/var/lib/mysql
         environment:
             - XTRABACKUP_PASSWORD_FILE=/run/secrets/XTRABACKUP_PASSWORD
-            - NODE_ADDRESS=^10.0.*.*
             - HEALTHY_WHILE_BOOTING=1
             - MYSQL_ROOT_HOST=%
 
@@ -69,6 +71,9 @@ volumes:
 networks:
     dbcluster:
         driver: overlay
+    intra:
+        name: intra
+        external: true
 
 secrets:
     DB_ROOT_PASSWORD:
