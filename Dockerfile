@@ -24,9 +24,6 @@ COPY primary-component.sql   /
 
 RUN set -ex ;\
     # Fix permissions
-    sed -i s/999/1000/g /etc/passwd ;\
-    sed -i s/999/1000/g /etc/group ;\
-    find / -group 999 -user 999 2>/dev/null | xargs chown -R 1000:1000; \
     chown -R mysql:mysql /etc/mysql ;\
     chmod -R go-w /etc/mysql ;\
     # Disable code that deletes progress file after SST
