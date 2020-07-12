@@ -1,14 +1,20 @@
-FROM mariadb:10.3
+FROM mariadb:10.3@sha256:565dc23efd1a83156fbb5f68b090600850419091d7c2e0b825f9a620368d8c63
+MAINTAINER Jonathan Adami <contact@jadami.com>
 
 RUN set -x \
     && apt-get update \
     && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends --no-install-suggests wget lsb-release \
+    && wget --no-check-certificate https://repo.percona.com/apt/percona-release_latest.$(lsb_release -sc)_all.deb \
+    && dpkg -i percona-release_latest.$(lsb_release -sc)_all.deb \
+    && rm percona-release_latest.$(lsb_release -sc)_all.deb \
+    && apt-get update \
     && apt-get install -y --no-install-recommends --no-install-suggests \
       curl \
       netcat \
       pigz \
       percona-toolkit \
-      percona-xtrabackup \
+      percona-xtrabackup-80 \
       pv \
     && curl -sSL -H "User-Agent: Mozilla/5.0" -o /tmp/qpress.tar http://www.quicklz.com/qpress-11-linux-x64.tar \
     && tar -C /usr/local/bin -xf /tmp/qpress.tar qpress \

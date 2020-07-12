@@ -1,13 +1,12 @@
 # echo 'root' | docker secret create DB_ROOT_PASSWORD -
 # echo 'xtra' | docker secret create XTRABACKUP_PASSWORD -
 #
-# docker network create -d overlay --attachable intra
+# docker network create -d overlay --attachable dbcluster
 #
-# docker stack deploy -c swarm.stack.yml db
-version: '3.8'
+# docker stack deploy -c swarm.stack.yml dbcluster
+version: "3.8"
 
 services:
-
     adminer:
         image: adminer
         deploy:
@@ -15,63 +14,50 @@ services:
         ports:
             - "8080:8080"
         networks:
-            - dbcluster
+            - internal_dbcluster
         environment:
-            - ADMINER_DEFAULT_SERVER=dbcluster
+            - ADMINER_DEFAULT_SERVER=db
             - ADMINER_PLUGINS=tables-filter dump-bz2 dump-date
 
-    seed:
-        image: pitilezard/mariadb-galera-swarm:10.3
+    db:
+        image: pitilezard/mariadb-galera-swarm:10.3@sha256:e5270a21efade6c7961b4b54a3da1dc7a109da86bfe7eeabcffa088ebd00e281
         secrets:
-            - DB_ROOT_PASSWORD
             - XTRABACKUP_PASSWORD
+            - DB_ROOT_PASSWORD
         deploy:
-            mode: replicated
-            replicas: 1
+            mode: global
+            update_config:
+                parallelism: 1
             placement:
                 constraints:
-                  - "node.role==manager"
+                    - "node.labels.db_node==1"
         networks:
+            - internal_dbcluster
             - dbcluster
+
+        # start one node with the seed command by tagging that node with db_node=1
+        # then when that node finished seeding that database, switch the command to "node db"
+        # minimum of 2 nodes is required for all of them to sync up
         command: seed
+        # command: node db
+
         volumes:
-            - mysql-data:/var/lib/mysql
+            - mysql-data:/var/lib/mysql:rw
         environment:
             - XTRABACKUP_PASSWORD_FILE=/run/secrets/XTRABACKUP_PASSWORD
             - MYSQL_ROOT_PASSWORD_FILE=/run/secrets/DB_ROOT_PASSWORD
-            - MYSQL_ROOT_HOST=%
-
-    node:
-        image: pitilezard/mariadb-galera-swarm:10.3
-        secrets:
-            - XTRABACKUP_PASSWORD
-        deploy:
-            mode: replicated
-            replicas: 0
-            placement:
-                max_replicas_per_node: 1
-                constraints:
-                  - "node.role==manager"
-        networks:
-            - dbcluster
-            - intra
-        command: node tasks.seed,tasks.node
-        volumes:
-            - mysql-data:/var/lib/mysql
-        environment:
-            - XTRABACKUP_PASSWORD_FILE=/run/secrets/XTRABACKUP_PASSWORD
             - HEALTHY_WHILE_BOOTING=1
             - MYSQL_ROOT_HOST=%
 
 volumes:
     mysql-data:
-        name: '{{.Service.Name}}-{{.Task.Slot}}-data'
+        name: "{{.Service.Name}}-data"
         driver: local
 
 networks:
-    dbcluster:
+    internal_dbcluster:
         driver: overlay
-    intra:
+    dbcluster:
         name: intra
         external: true
 
