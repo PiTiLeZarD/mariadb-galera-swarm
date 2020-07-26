@@ -1,4 +1,4 @@
-FROM mariadb:10.3@sha256:565dc23efd1a83156fbb5f68b090600850419091d7c2e0b825f9a620368d8c63
+FROM mariadb:10.3@sha256:5416211266fbb970b0fb1781b37493b0eb850facc70e6c4c815c12ea9197fbf6
 MAINTAINER Jonathan Adami <contact@jadami.com>
 
 RUN set -x \
