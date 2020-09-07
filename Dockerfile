@@ -1,10 +1,10 @@
-FROM mariadb:10.3@sha256:5416211266fbb970b0fb1781b37493b0eb850facc70e6c4c815c12ea9197fbf6
+FROM mariadb:10.3@sha256:c7a0fd72d92862775ccb743e5650eb8698e49d530643430e3a66a4c3c064519a
 MAINTAINER Jonathan Adami <contact@jadami.com>
 
 RUN set -x \
     && apt-get update \
     && apt-get upgrade -y \
-    && apt-get install -y --no-install-recommends --no-install-suggests wget lsb-release \
+    && apt-get install -y --no-install-recommends --no-install-suggests wget curl lsb-release \
     && wget --no-check-certificate https://repo.percona.com/apt/percona-release_latest.$(lsb_release -sc)_all.deb \
     && dpkg -i percona-release_latest.$(lsb_release -sc)_all.deb \
     && rm percona-release_latest.$(lsb_release -sc)_all.deb \

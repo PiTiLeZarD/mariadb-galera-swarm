@@ -8,7 +8,7 @@ version: "3.8"
 
 services:
     adminer:
-        image: adminer
+        image: adminer:latest@sha256:3e96766afea7075a7a44bd623b15af7c034f4fc985f0ea11d36bab9dfb42ecd0
         deploy:
             replicas: 1
         ports:
@@ -20,13 +20,14 @@ services:
             - ADMINER_PLUGINS=tables-filter dump-bz2 dump-date
 
     db:
-        image: pitilezard/mariadb-galera-swarm:10.3@sha256:e5270a21efade6c7961b4b54a3da1dc7a109da86bfe7eeabcffa088ebd00e281
+        image: pitilezard/mariadb-galera-swarm:10.3@sha256:5bcaf4936d5af071621c6ccfd4c18c5a28bf096264d25f7b61be2d293b449c1c
         secrets:
             - XTRABACKUP_PASSWORD
             - DB_ROOT_PASSWORD
         deploy:
             mode: global
             update_config:
+                delay: 600s
                 parallelism: 1
             placement:
                 constraints:
@@ -51,7 +52,7 @@ services:
 
 volumes:
     mysql-data:
-        name: "{{.Service.Name}}-data"
+        name: "{{.Service.Name}}-5bcaf493-data"
         driver: local
 
 networks:
